@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>東京消防庁 当番表</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: #f0f2f5;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #c0392b;
+      color: white;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header .logo { font-size: 26px; }
+    header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.05em; }
+    header p { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+
+    /* Legend bar */
+    .legend-bar {
+      background: white;
+      border-radius: 10px;
+      padding: 12px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .legend-title {
+      font-size: 12px;
+      color: #888;
+      font-weight: 600;
+    }
+
+    .legend-items {
+      display: flex;
+      gap: 16px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .legend-chip {
+      width: 32px;
+      height: 22px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .chip-1 { background: #c0392b; }
+    .chip-2 { background: #2e7d32; }
+    .chip-3 { background: #1565c0; }
+
+    /* Calendar Card */
+    .calendar-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    /* Month navigation */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 20px;
+    }
+
+    .nav-btn {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.15s;
+      color: #444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-btn:hover { background: #f5f5f5; }
+
+    .month-title {
+      font-size: 22px;
+      font-weight: 700;
+      min-width: 160px;
+      text-align: center;
+    }
+
+    .today-btn {
+      font-size: 13px;
+      padding: 6px 14px;
+      background: #c0392b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .today-btn:hover { background: #a93226; }
+
+    /* Weekday headers */
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border-bottom: 1px solid #eee;
+    }
+    .weekday-header {
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #666;
+    }
+    .weekday-header.sat { color: #1565c0; }
+    .weekday-header.sun { color: #c0392b; }
+
+    /* Calendar Grid */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .day-cell {
+      border-right: 1px solid #f0f0f0;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 8px 6px 10px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .day-cell:nth-child(7n) { border-right: none; }
+    .day-cell.empty { background: #fafafa; }
+    .day-cell.today { background: #fff5f5; }
+
+    .day-number {
+      font-size: 14px;
+      font-weight: 600;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .day-cell.today .day-number { background: #c0392b; color: white; }
+    .day-cell.sat .day-number { color: #1565c0; }
+    .day-cell.sun .day-number { color: #c0392b; }
+    .day-cell.today.sat .day-number,
+    .day-cell.today.sun .day-number { color: white; }
+
+    /* Toban chip */
+    .toban-chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 10px;
+      color: white;
+      width: 100%;
+      max-width: 68px;
+      letter-spacing: 0.03em;
+    }
+
+    .toban-1 { background: #c0392b; }
+    .toban-2 { background: #2e7d32; }
+    .toban-3 { background: #1565c0; }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 16px;
+      padding-bottom: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .day-cell { min-height: 60px; padding: 5px 2px 6px; gap: 4px; }
+      .day-number { font-size: 12px; width: 24px; height: 24px; }
+      .toban-chip { font-size: 11px; padding: 3px 4px; }
+      .month-title { font-size: 18px; min-width: 130px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🚒</div>
+  <div>
+    <h1>東京消防庁 当番表</h1>
+    <p>1部・2部・3部 3交代制</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Legend -->
+  <div class="legend-bar">
+    <span class="legend-title">凡例</span>
+    <div class="legend-items">
+      <div class="legend-item">
+        <div class="legend-chip chip-1">1部</div>
+        <span>1部当番</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-chip chip-2">2部</div>
+        <span>2部当番</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-chip chip-3">3部</div>
+        <span>3部当番</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="calendar-card">
+    <div class="month-nav">
+      <button class="nav-btn" id="prevBtn">&#8249;</button>
+      <div class="month-title" id="monthTitle"></div>
+      <button class="nav-btn" id="nextBtn">&#8250;</button>
+      <button class="today-btn" id="todayBtn">今日</button>
+    </div>
+
+    <div class="weekdays">
+      <div class="weekday-header sun">日</div>
+      <div class="weekday-header">月</div>
+      <div class="weekday-header">火</div>
+      <div class="weekday-header">水</div>
+      <div class="weekday-header">木</div>
+      <div class="weekday-header">金</div>
+      <div class="weekday-header sat">土</div>
+    </div>
+
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <footer>2026年基準（1月1日＝1部当番、3日周期）</footer>
+</div>
+
+<script>
+  // 2026-01-01 = 1部当番 confirmed from official schedule
+  const REF_DATE = new Date(2026, 0, 1); // Jan 1, 2026
+  REF_DATE.setHours(0, 0, 0, 0);
+  const REF_BU = 1; // 1部
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let currentYear = today.getFullYear();
+  let currentMonth = today.getMonth();
+
+  function getToban(date) {
+    const diffDays = Math.round((date - REF_DATE) / (1000 * 60 * 60 * 24));
+    const cycle = ((diffDays % 3) + 3) % 3; // 0, 1, 2
+    return ((REF_BU - 1 + cycle) % 3) + 1;  // 1, 2, or 3
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '';
+    document.getElementById('monthTitle').textContent =
+      `${currentYear}年 ${currentMonth + 1}月`;
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell empty';
+      grid.appendChild(cell);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(currentYear, currentMonth, d);
+      date.setHours(0, 0, 0, 0);
+      const dow = date.getDay();
+
+      const cell = document.createElement('div');
+      let cls = 'day-cell';
+      if (date.getTime() === today.getTime()) cls += ' today';
+      if (dow === 6) cls += ' sat';
+      if (dow === 0) cls += ' sun';
+      cell.className = cls;
+
+      const numDiv = document.createElement('div');
+      numDiv.className = 'day-number';
+      numDiv.textContent = d;
+      cell.appendChild(numDiv);
+
+      const bu = getToban(date);
+      const chip = document.createElement('div');
+      chip.className = `toban-chip toban-${bu}`;
+      chip.textContent = `${bu}部`;
+      cell.appendChild(chip);
+
+      grid.appendChild(cell);
+    }
+
+    const totalCells = firstDay + daysInMonth;
+    const remainder = totalCells % 7;
+    if (remainder !== 0) {
+      for (let i = 0; i < 7 - remainder; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'day-cell empty';
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar();
+  });
+
+  document.getElementById('todayBtn').addEventListener('click', () => {
+    currentYear = today.getFullYear();
+    currentMonth = today.getMonth();
+    renderCalendar();
+  });
+
+  renderCalendar();
+</script>
+</body>
+</html>
